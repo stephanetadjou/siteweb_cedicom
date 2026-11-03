@@ -1,0 +1,8 @@
+# Hébergement où la racine web du domaine est le dossier du projet (et non public/) :
+# toutes les requêtes sont renvoyées vers public/, ce qui sert /images, /build et
+# protège les fichiers sensibles (.env, storage, vendor…).
+# Sans effet si la racine web pointe déjà sur public/ (configuration recommandée).
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
