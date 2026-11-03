@@ -1,0 +1,86 @@
+# Pipeline GitLab du site vitrine CEDICOM (Laravel 13 + Inertia/React + Vite).
+# Guide complet : DEPLOIEMENT_GITLAB.md
+#
+# Variables à créer dans Settings > CI/CD > Variables (toutes protégées) :
+#   SSH_HOST, SSH_PORT, SSH_USER, SSH_PRIVATE_KEY (type Fichier),
+#   SSH_PASSPHRASE (vide si la clé n'en a pas), DEPLOY_PATH
+# Facultatives : SSH_KNOWN_HOSTS (empreinte du serveur, recommandé), PHP_BIN (défaut : php).
+
+stages:
+  - build
+  - test
+  - deploy
+
+default:
+  interruptible: true
+
+# 1. Build Vite (Node 22). public/build est transmis aux tests et au déploiement.
+build_assets:
+  stage: build
+  image: node:22-alpine
+  cache:
+    key:
+      files: [package-lock.json]
+    paths: [.npm/]
+  script:
+    - npm ci --cache .npm --prefer-offline
+    - npm run build
+  artifacts:
+    paths: [public/build/]
+    expire_in: 1 week
+
+# 2. Tests du site (base SQLite en mémoire, voir phpunit.xml).
+.php:
+  image: php:8.3-cli
+  cache:
+    key:
+      files: [composer.lock]
+    paths: [vendor/]
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git unzip libzip-dev libicu-dev > /dev/null
+    - docker-php-ext-install -j"$(nproc)" zip intl bcmath > /dev/null
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --quiet
+    - composer install --no-interaction --no-progress --prefer-dist
+    - cp .env.example .env
+    - php artisan key:generate
+
+tests:
+  extends: .php
+  stage: test
+  needs: [build_assets]
+  script:
+    # Seuls les tests du site : les tests Breeze (Auth, Profile) visent des routes désactivées.
+    - php artisan test tests/Feature/Site tests/Feature/Admin
+
+pint:
+  extends: .php
+  stage: test
+  needs: []
+  allow_failure: true # informatif, ne bloque pas le déploiement
+  script:
+    - vendor/bin/pint --test
+
+# 3. Déploiement SSH : manuel, sur main uniquement (branche à protéger dans GitLab).
+deploy_production:
+  stage: deploy
+  image: alpine:3.20
+  needs: [build_assets, tests]
+  interruptible: false
+  resource_group: production # un seul déploiement à la fois
+  environment:
+    name: production
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+  before_script:
+    - apk add --no-cache openssh-client rsync bash > /dev/null
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    # SSH_PRIVATE_KEY est une variable de type Fichier : elle contient le chemin du fichier.
+    - install -m 600 "$SSH_PRIVATE_KEY" ~/.ssh/id_deploy
+    - if [ -n "$SSH_PASSPHRASE" ]; then ssh-keygen -p -P "$SSH_PASSPHRASE" -N "" -f ~/.ssh/id_deploy > /dev/null; fi
+    - if [ -n "$SSH_KNOWN_HOSTS" ]; then echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts; else ssh-keyscan -p "${SSH_PORT:-22}" "$SSH_HOST" > ~/.ssh/known_hosts 2>/dev/null; fi
+    - export SSH_CMD="ssh -i $HOME/.ssh/id_deploy -p ${SSH_PORT:-22} -o BatchMode=yes"
+  script:
+    - test -f public/build/manifest.json
+    - rsync -az --delete -e "$SSH_CMD" public/build/ "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/public/build.new/"
+    - $SSH_CMD "$SSH_USER@$SSH_HOST" "DEPLOY_PATH='$DEPLOY_PATH' DEPLOY_SHA='$CI_COMMIT_SHA' PHP_BIN='${PHP_BIN:-php}' bash -s" < deploy/remote-deploy.sh

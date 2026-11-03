@@ -1,0 +1,83 @@
+name: Tests
+
+on:
+  push:
+    branches: [ "staging", "main" ]
+  pull_request:
+    branches: [ "staging", "main" ]
+  workflow_call:
+
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest
+    # DB_CONNECTION=sqlite pour TOUTE commande artisan de ce job (pas
+    # seulement migrate/test) : on force explicitement SQLite ici plutôt que
+    # de dépendre de la valeur par défaut de .env.example.
+    env:
+      DB_CONNECTION: sqlite
+      DB_DATABASE: database/database.sqlite
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo, pdo_sqlite, sqlite3, dom, fileinfo, curl, zip, intl, bcmath
+          coverage: none
+
+      # Vite 8 demande Node 20.19+ ou 22.12+.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Copy .env
+        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+
+      # --no-scripts : package:discover est relancé plus bas, une fois
+      # l'environnement prêt, pour avoir un message d'erreur clair.
+      - name: Install Composer dependencies
+        run: composer install -q --no-ansi --no-interaction --no-progress --prefer-dist --no-scripts
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # Le build sert aussi aux tests (manifest Vite des pages Inertia).
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Create SQLite database
+        run: |
+          mkdir -p database
+          touch database/database.sqlite
+
+      - name: Directory permissions
+        run: chmod -R 775 storage bootstrap/cache database
+
+      - name: Generate app key
+        run: php artisan key:generate
+
+      - name: Discover packages
+        run: php artisan package:discover --ansi
+
+      - name: Run migrations
+        run: php artisan migrate --force
+
+      # Informatif : un écart de style ne bloque pas le déploiement.
+      - name: Check code style (Pint)
+        continue-on-error: true
+        run: vendor/bin/pint --test
+
+      # Tests du site et du back office (/admin). Les tests Breeze
+      # (tests/Feature/Auth, ProfileTest) visent des routes désactivées :
+      # ils restent dans le dépôt mais sont exclus de ce run.
+      - name: Execute site and back office tests
+        run: php artisan test tests/Feature/Site tests/Feature/Admin
+
+      # Le job de déploiement réutilise ce build : pas de Node sur le serveur.
+      - name: Upload Vite build
+        uses: actions/upload-artifact@v4
+        with:
+          name: vite-build
+          path: public/build/
+          retention-days: 7
