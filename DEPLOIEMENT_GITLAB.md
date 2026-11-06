@@ -125,7 +125,7 @@ CACHE_STORE=database
 QUEUE_CONNECTION=database
 FILESYSTEM_DISK=local
 
-# Le site n'envoie pas encore d'e-mails (les demandes sont stockées en base).
+# E-mails des formulaires : voir DEPLOIEMENT_GITHUB.md, section 6 ter.
 MAIL_MAILER=log
 MAIL_FROM_ADDRESS="contact@exemple-cedicom.ga"
 MAIL_FROM_NAME="${APP_NAME}"

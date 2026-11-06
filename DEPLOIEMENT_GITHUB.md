@@ -132,10 +132,16 @@ CACHE_STORE=database
 QUEUE_CONNECTION=database
 FILESYSTEM_DISK=local
 
-# Le site n'envoie pas encore d'e-mails (les demandes sont stockées en base).
-MAIL_MAILER=log
-MAIL_FROM_ADDRESS="contact@exemple-cedicom.ga"
-MAIL_FROM_NAME="${APP_NAME}"
+# E-mails : voir la section 6 ter.
+MAIL_MAILER=smtp
+MAIL_SCHEME=smtps
+MAIL_HOST=mail.cedicomgroup.com
+MAIL_PORT=465
+MAIL_USERNAME=info@cedicomgroup.com
+MAIL_PASSWORD=Exemple-MotDePasse-Boite
+MAIL_FROM_ADDRESS="info@cedicomgroup.com"
+MAIL_FROM_NAME="CEDICOM Group"
+MAIL_NOTIFY_TO=info@cedicomgroup.com
 ```
 
 Puis `php artisan key:generate`, une seule fois. Ne jamais la régénérer ensuite, sinon les sessions sont invalidées.
@@ -169,6 +175,18 @@ Le site a un back office simple sur `https://votre-domaine/admin` : tableau de b
 2. La commande affiche **une seule fois** un mot de passe aléatoire : le noter tout de suite (gestionnaire de mots de passe). Il n'est stocké que sous forme chiffrée.
 3. Se connecter sur `/admin/login` avec cette adresse et ce mot de passe.
 4. Mot de passe perdu : relancer la même commande avec la même adresse ; un nouveau mot de passe est généré et l'ancien ne fonctionne plus.
+
+## 6 ter. E-mails des formulaires
+
+À chaque message de contact et à chaque demande de partenariat, le site envoie une alerte à `MAIL_NOTIFY_TO` (`info@cedicomgroup.com` par défaut), avec tous les champs et un bouton vers le back office. « Répondre » dans la messagerie écrit directement au visiteur.
+
+La demande est enregistrée avant l'envoi : si le SMTP est en panne, le formulaire fonctionne quand même, l'erreur est écrite dans `storage/logs` et la demande reste visible dans le back office. L'envoi est direct, sans file d'attente, avec une limite de 10 secondes.
+
+1. Dans cPanel > Comptes de messagerie, créer la boîte `info@cedicomgroup.com`. « Connect Devices » donne le serveur sortant et le port.
+2. Dans le `.env` du serveur, renseigner le bloc `MAIL_*` de la section 5. Port 465 : `MAIL_SCHEME=smtps`. Port 587 : `MAIL_SCHEME=smtp`. `MAIL_FROM_ADDRESS` doit être identique à `MAIL_USERNAME`. Mettre `MAIL_PASSWORD` entre guillemets s'il contient `#` ou un espace.
+3. Prendre en compte le `.env` : `php artisan config:clear` puis `php artisan config:cache`.
+4. Tester en envoyant un message depuis `/contact`. Si rien n'arrive, chercher « Échec de l'envoi » dans `storage/logs/laravel-*.log`.
+5. Dans cPanel > Délivrabilité des e-mails, vérifier que SPF et DKIM sont valides pour `cedicomgroup.com`, sinon les e-mails risquent d'arriver en spam.
 
 ## 7. Ce que font les workflows
 

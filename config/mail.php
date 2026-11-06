@@ -45,7 +45,8 @@ return [
             'port' => env('MAIL_PORT', 2525),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            // Envoi direct pendant la requête : un SMTP injoignable ne doit pas bloquer le formulaire.
+            'timeout' => (float) env('MAIL_TIMEOUT', 10),
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
@@ -114,5 +115,17 @@ return [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Formulaires du site
+    |--------------------------------------------------------------------------
+    |
+    | Destinataires des alertes des formulaires de contact et de partenariat
+    | (une ou plusieurs adresses séparées par des virgules).
+    |
+    */
+
+    'notify_to' => array_map('trim', explode(',', env('MAIL_NOTIFY_TO') ?: 'info@cedicomgroup.com')),
 
 ];
