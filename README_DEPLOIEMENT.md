@@ -12,7 +12,7 @@ Site vitrine en Laravel 13 + React (via Inertia.js) + Tailwind CSS 4, compilé p
 | `/langue/fr`, `/langue/en` | Change la langue (gardée en session, français par défaut) |
 
 Les demandes de partenariat sont enregistrées dans la table `partnership_requests`, les messages de contact dans `contact_messages`.
-Les contenus répétés (pôles, marques partenaires, divisions et enseignes) viennent des tables `poles`, `partner_brands`, `divisions` et `enseignes`, remplies par `database/seeders/SiteContentSeeder.php`. Pour modifier un texte ou ajouter une marque, éditer ce seeder puis relancer `php artisan db:seed --class=SiteContentSeeder` (il vide et recharge uniquement ces quatre tables).
+Les contenus répétés (pôles, marques partenaires, divisions et enseignes) viennent des tables `poles`, `partner_brands`, `divisions` et `enseignes`, remplies par `database/seeders/SiteContentSeeder.php`. Ces contenus, le diaporama de l'accueil et les paramètres du site (coordonnées, chiffres clés, accroche) se modifient dans le back office (`/admin`, rubrique Contenus du site). Le seeder ne sert qu'à remplir une base vide : en production, utiliser `php artisan cedicom:seed-content`, jamais `db:seed --class=SiteContentSeeder` qui effacerait les modifications du back office.
 
 Les images sont dans `public/images/` (`partenaires/`, `enseignes/`, `divisions/`, `poles/`, `logistique/`, `logo/`).
 
@@ -70,7 +70,7 @@ php artisan tinker
 ## Langues
 
 - Textes de l’interface : `lang/fr.json` et `lang/en.json` (mêmes clés). Ils sont partagés avec React par `HandleInertiaRequests` et lus avec `useT()` (`resources/js/lib/i18n.js`). Les messages de validation y sont aussi.
-- Contenus en base (pôles, divisions) : colonnes JSON `{"fr": ..., "en": ...}`, à modifier dans `SiteContentSeeder`.
+- Contenus en base (pôles, divisions) : colonnes JSON `{"fr": ..., "en": ...}`, modifiables dans le back office.
 - Chaque demande enregistre la langue utilisée (colonne `locale`). Les secteurs et objets sont stockés sous forme de clé (`fmcg`, `fashion`, `sales`…), libellés dans les fichiers de langue.
 
 ## Structure du front

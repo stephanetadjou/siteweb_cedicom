@@ -218,6 +218,30 @@ L'hébergeur a signalé que le formulaire de contact servait à envoyer du spam.
 
 Sans ces deux clés, reCAPTCHA est simplement désactivé (les autres protections restent actives). Si de vrais visiteurs sont bloqués, baisser `RECAPTCHA_MIN_SCORE` à `0.3` ; s'il reste du spam, le monter à `0.7`. Le tableau de bord reCAPTCHA de Google montre la répartition des scores.
 
+## 6 quinquies. Gestion des contenus dans le back office
+
+Dans `/admin`, la rubrique **Contenus du site** permet de modifier sans toucher au code :
+
+| Écran | Ce qu'on y modifie |
+| --- | --- |
+| Paramètres du site | Téléphones, e-mail, adresse, réseaux sociaux (Facebook, Instagram, LinkedIn, WhatsApp), chiffres clés (m², camions, années), grand titre et paragraphe d'introduction de l'accueil en FR et EN. Un champ laissé vide reprend le texte par défaut. |
+| Diaporama de l'accueil | Photos du haut de l'accueil : ajout, remplacement, ordre, voile léger ou fort, cadrage, texte alternatif FR/EN, affichage oui/non. |
+| Pôles d'activité | Cartes « Nos pôles d'activité » : titre, description, ligne de marques, photo, lien. |
+| Divisions | Titre, description, photo, catégories d'activité. |
+| Enseignes | Logos des franchises et concepts propres de chaque division. |
+| Marques partenaires | Logo, catégorie, ordre, affichage oui/non, mise en avant (« Partenaire majeur », affichée en premier). |
+
+Chaque liste a des flèches ↑ ↓ pour l'ordre, un crayon pour modifier et une corbeille pour supprimer (avec confirmation). Les changements sont visibles immédiatement sur le site (le cache est vidé à chaque modification).
+
+**Images :** JPG, PNG ou WebP, 5 Mo maximum. Elles sont réduites automatiquement (1920 px pour les photos, 600 px pour les logos) et rangées dans `storage/app/public/uploads`, servies par l'adresse `/storage/…`. Les images livrées avec le site (`public/images`) restent en place et ne sont jamais supprimées.
+
+**Sur le serveur, une seule fois :**
+1. `php artisan storage:link` (le déploiement le fait aussi) : sans ce lien, les images envoyées depuis le back office ne s'affichent pas. Sous cPanel, si la commande est refusée, créer le lien à la main : `ln -s ../storage/app/public public/storage` dans le dossier du site.
+2. Droits d'écriture sur `storage/` pour l'utilisateur du serveur web.
+3. `php artisan migrate --force` puis `php artisan cedicom:seed-content` : crée les nouvelles tables et ajoute le diaporama par défaut, **sans toucher aux pôles, divisions et marques déjà en base**.
+
+**Important :** ne plus lancer `php artisan db:seed --class=SiteContentSeeder` en production. Cette commande remet tous les contenus par défaut et efface les modifications faites dans le back office.
+
 ## 7. Ce que font les workflows
 
 **`tests.yml`** (push et pull request sur `main` et `staging`, et avant chaque déploiement)
@@ -238,7 +262,7 @@ Sans ces deux clés, reCAPTCHA est simplement désactivé (les autres protection
    4. `composer install --no-dev --optimize-autoloader --no-interaction`
    5. Remplace `public/build` par `public/build.new`
    6. `php artisan migrate --force` (n'applique que les nouvelles migrations, ne vide rien)
-   7. `php artisan db:seed --class=SiteContentSeeder --force` : recharge **uniquement** `poles`, `partner_brands`, `divisions` et `enseignes`. Les demandes de partenariat et messages de contact ne sont pas touchés.
+   7. `php artisan cedicom:seed-content` : charge les contenus par défaut **seulement si la base est vide** (premier déploiement). Les modifications faites dans le back office ne sont jamais écrasées.
    8. `php artisan storage:link`, `optimize:clear`, puis `config:cache`, `route:cache`, `view:cache`
    9. Droits : `chmod -R ug+rwX storage bootstrap/cache`. **Aucun `chown`, aucun utilisateur codé en dur.**
 
@@ -311,12 +335,12 @@ Retiré de l'ancien `deploy.yml` (copié d'un CRM « RETAIL GROUP ») :
 - la mention d'une migration vers Azure App Service et du `CLAUDE.md` ;
 - `npm ci` / `npm run build` sur le serveur (le build vient maintenant de GitHub) et `queue:restart` (aucun worker de file sur la vitrine).
 
-Ajouté : sauvegarde `mysqldump` avant `migrate --force`, `db:seed --class=SiteContentSeeder --force`, déploiement du commit exact testé, un seul déploiement à la fois, environnement `production`.
+Ajouté : sauvegarde `mysqldump` avant `migrate --force`, `cedicom:seed-content` (contenus par défaut si la base est vide), déploiement du commit exact testé, un seul déploiement à la fois, environnement `production`.
 
 Points d'attention :
 1. **Tests Breeze exclus, pas supprimés.** `php artisan test` complet donne 20 échecs et 2 erreurs dans `tests/Feature/Auth/*` et `tests/Feature/ProfileTest.php` : ces tests visent les routes d'authentification, volontairement désactivées. À terme : les supprimer ou réactiver l'authentification.
 2. **Pint** : `bootstrap/app.php` et `app/Models/Division.php` ont été remis au style Pint ; `pint --test` passe. L'étape reste non bloquante.
-3. **Le seeder est relancé à chaque déploiement.** C'est voulu (les textes et images de la vitrine vivent dans `SiteContentSeeder`), mais toute modification faite directement en base sur `poles`, `partner_brands`, `divisions` ou `enseignes` sera écrasée.
+3. **Les contenus se gèrent dans le back office.** Le déploiement ne recharge les contenus par défaut que si la base est vide (`cedicom:seed-content`). Ne plus lancer `php artisan db:seed --class=SiteContentSeeder` en production : cette commande efface toutes les modifications faites dans le back office.
 4. **Pas de SSR** Inertia dans le projet : rien à construire de ce côté.
 5. Le dossier local `C:\app\site_web_laravel` n'est pas encore un dépôt Git.
 6. Les workflows n'ont pas encore tourné sur GitHub : le premier lancement servira de validation.

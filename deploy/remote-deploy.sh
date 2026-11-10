@@ -48,10 +48,10 @@ if [ -d public/build.new ]; then
     rm -rf public/build.old
 fi
 
-# 5. Base : nouvelles migrations seulement, puis rechargement des contenus de la vitrine
-#    (SiteContentSeeder ne vide que poles, partner_brands, divisions et enseignes).
+# 5. Base : nouvelles migrations seulement, puis contenus par défaut uniquement si la base
+#    est vide (les modifications faites dans le back office ne sont jamais écrasées).
 $PHP artisan migrate --force
-$PHP artisan db:seed --class=SiteContentSeeder --force
+$PHP artisan cedicom:seed-content
 
 # 6. Lien public/storage et caches.
 $PHP artisan storage:link || true

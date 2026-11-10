@@ -3,31 +3,52 @@ import { useEffect, useState } from 'react';
 import Icon from '@/Components/Site/Icon';
 
 const NAV = [
-    ['/admin', 'Tableau de bord', 'home'],
-    ['/admin/partenariats', 'Partenariats', 'handshake'],
-    ['/admin/messages', 'Messages de contact', 'mail'],
+    {
+        title: null,
+        items: [
+            ['/admin', 'Tableau de bord', 'home'],
+            ['/admin/partenariats', 'Partenariats', 'handshake'],
+            ['/admin/messages', 'Messages de contact', 'mail'],
+        ],
+    },
+    {
+        title: 'Contenus du site',
+        items: [
+            ['/admin/parametres', 'Paramètres du site', 'settings'],
+            ['/admin/contenus/diaporama', 'Diaporama de l’accueil', 'image'],
+            ['/admin/contenus/poles', "Pôles d'activité", 'layers'],
+            ['/admin/contenus/divisions', 'Divisions', 'store'],
+            ['/admin/contenus/enseignes', 'Enseignes', 'tag'],
+            ['/admin/contenus/marques', 'Marques partenaires', 'tag'],
+        ],
+    },
 ];
 
 function Nav({ url }) {
     return (
-        <nav className="px-3 py-5" aria-label="Back office">
-            <ul className="space-y-1">
-                {NAV.map(([href, label, icon]) => {
-                    const active = href === '/admin' ? url === '/admin' : url.startsWith(href);
-                    return (
-                        <li key={href}>
-                            <Link
-                                href={href}
-                                aria-current={active ? 'page' : undefined}
-                                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-semibold transition ${active ? 'bg-white text-brand' : 'text-white/90 hover:bg-white/10'}`}
-                            >
-                                <Icon name={icon} className="size-5" />
-                                {label}
-                            </Link>
-                        </li>
-                    );
-                })}
-            </ul>
+        <nav className="flex flex-col gap-6 px-3 py-5" aria-label="Back office">
+            {NAV.map((group, i) => (
+                <div key={i}>
+                    {group.title && <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">{group.title}</p>}
+                    <ul className="space-y-1">
+                        {group.items.map(([href, label, icon]) => {
+                            const active = href === '/admin' ? url === '/admin' : url.startsWith(href);
+                            return (
+                                <li key={href}>
+                                    <Link
+                                        href={href}
+                                        aria-current={active ? 'page' : undefined}
+                                        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-semibold transition ${active ? 'bg-white text-brand' : 'text-white/90 hover:bg-white/10'}`}
+                                    >
+                                        <Icon name={icon} className="size-5" />
+                                        {label}
+                                    </Link>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
+            ))}
         </nav>
     );
 }
@@ -100,6 +121,7 @@ export const card = 'rounded-2xl border border-line bg-white shadow-card';
 export const btn = 'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-[15px] font-bold leading-tight transition disabled:opacity-60';
 export const btnPrimary = `${btn} bg-brand text-white hover:bg-brand-dark`;
 export const btnOutline = `${btn} border border-line bg-white text-navy hover:border-brand hover:text-brand`;
+export const btnAccent = `${btn} bg-accent text-white hover:bg-accent-dark`;
 
 export function StatusBadge({ done, doneLabel = 'Traité' }) {
     return done ? (

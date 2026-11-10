@@ -170,7 +170,7 @@ Le script de déploiement lit `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABAS
    4. `composer install --no-dev --optimize-autoloader --no-interaction`
    5. Remplace `public/build` par `public/build.new`
    6. `php artisan migrate --force` (n'applique que les nouvelles migrations, ne vide rien)
-   7. `php artisan db:seed --class=SiteContentSeeder --force` : recharge **uniquement** `poles`, `partner_brands`, `divisions` et `enseignes`. Les demandes de partenariat et messages de contact ne sont pas touchés.
+   7. `php artisan cedicom:seed-content` : charge les contenus par défaut **seulement si la base est vide** (premier déploiement). Les modifications faites dans le back office ne sont jamais écrasées.
    8. `php artisan storage:link`, `optimize:clear`, puis `config:cache`, `route:cache`, `view:cache`
    9. Droits : `chmod -R ug+rwX storage bootstrap/cache`. **Aucun `chown`, aucun utilisateur codé en dur.**
 
@@ -229,7 +229,7 @@ Le script de déploiement lit `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABAS
 1. **Les workflows GitHub Actions n'ont pas été modifiés.** `.github/workflows/deploy.yml` vient d'un autre projet (un CRM « RETAIL GROUP ») : il lance `php artisan crm:refresh-lifecycle`, qui n'existe pas ici (le déploiement échouerait), fait `chown nader:nader`, cite un `CLAUDE.md` absent et annonce Azure App Service. GitLab ne lit pas ces fichiers ; ils peuvent rester, être corrigés ou être supprimés, selon votre choix.
 2. **Tests Breeze cassés.** `php artisan test` complet donne 20 échecs et 2 erreurs dans `tests/Feature/Auth/*` et `tests/Feature/ProfileTest.php` : ces tests visent les routes d'authentification, volontairement désactivées. Le pipeline GitLab ne lance donc que `tests/Feature/Site`. À terme : supprimer ces tests ou réactiver l'authentification.
 3. **Pint** signale `bootstrap/app.php` (ordre des imports) : d'où le job `pint` non bloquant.
-4. **Le seeder est relancé à chaque déploiement.** C'est voulu (les textes et images de la vitrine vivent dans `SiteContentSeeder`), mais toute modification faite directement en base sur `poles`, `partner_brands`, `divisions` ou `enseignes` sera écrasée.
+4. **Les contenus se gèrent dans le back office.** Le déploiement ne recharge les contenus par défaut que si la base est vide (`cedicom:seed-content`). Ne plus lancer `php artisan db:seed --class=SiteContentSeeder` en production : cette commande efface toutes les modifications faites dans le back office.
 5. **Pas de SSR** Inertia dans le projet : le pipeline n'en construit pas, c'est cohérent. Pas de worker de file non plus, d'où l'absence de `queue:restart`.
 6. Le dossier local `C:\app\site_web_laravel` n'est pas encore un dépôt Git : il faudra `git init`, puis pousser vers GitLab.
 7. Le pipeline n'a pas encore été exécuté sur une vraie instance GitLab : le premier lancement servira de validation.

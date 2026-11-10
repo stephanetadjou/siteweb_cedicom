@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Division;
+use App\Models\HeroSlide;
 use App\Models\PartnerBrand;
 use App\Models\PartnershipRequest;
 use App\Models\Pole;
+use App\Support\SiteCache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -13,12 +15,19 @@ class HomeController extends Controller
 {
     public function __invoke(): Response
     {
-        return Inertia::render('Site/Home', [
-            'poles' => Pole::orderBy('sort')->get()->map->toLocalizedArray(),
-            'brands' => PartnerBrand::orderBy('sort')->get()
-                ->map(fn (PartnerBrand $b) => ['id' => $b->id, 'name' => $b->name, 'category' => $b->category, 'logo' => asset($b->logo)]),
+        // Contenus gérés dans le back office, en cache jusqu'à la prochaine modification.
+        $content = SiteCache::home(app()->getLocale(), fn () => [
+            'heroSlides' => HeroSlide::where('visible', true)->orderBy('sort')->orderBy('id')->get()->map->toLocalizedArray()->all(),
+            'poles' => Pole::orderBy('sort')->orderBy('id')->get()->map->toLocalizedArray()->all(),
+            'brands' => PartnerBrand::where('visible', true)->orderByDesc('featured')->orderBy('sort')->orderBy('id')->get()
+                ->map(fn (PartnerBrand $b) => [
+                    'id' => $b->id, 'name' => $b->name, 'category' => $b->category, 'logo' => asset($b->logo), 'featured' => $b->featured,
+                ])->all(),
+            'divisions' => Division::with('enseignes')->orderBy('sort')->orderBy('id')->get()->map->toLocalizedArray()->all(),
+        ]);
+
+        return Inertia::render('Site/Home', $content + [
             'brandCategories' => PartnerBrand::CATEGORIES,
-            'divisions' => Division::with('enseignes')->orderBy('sort')->get()->map->toLocalizedArray(),
             'sectors' => PartnershipRequest::SECTORS,
         ]);
     }

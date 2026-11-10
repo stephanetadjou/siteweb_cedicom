@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\SiteSettings;
 use App\Support\SpamGuard;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -37,6 +38,8 @@ class HandleInertiaRequests extends Middleware
             'locale' => $locale,
             'locales' => SetLocale::LOCALES,
             'translations' => fn () => $this->translations($locale),
+            // Coordonnées, réseaux sociaux, chiffres clés et accroche (back office > Paramètres du site).
+            'site' => fn () => SiteSettings::forLocale($locale),
             // Uniquement pour le back office : nom et e-mail du compte connecté.
             'auth' => fn () => ['user' => $request->user()?->only('name', 'email')],
             // Anti-spam des formulaires : jeton horodaté signé et clé publique reCAPTCHA (jamais la clé secrète).

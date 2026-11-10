@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import ContactCards from '@/Components/Site/ContactCards';
 import Icon from '@/Components/Site/Icon';
@@ -15,7 +15,8 @@ const HERO_VEILS = {
     strong: 'bg-[linear-gradient(0deg,#eef3f9_0%,#eef3f900_45%)] lg:bg-[linear-gradient(90deg,#eef3f9f5_0%,#eef3f9e0_36%,#eef3f966_62%,#eef3f900_85%),linear-gradient(0deg,#eef3f9_0%,#eef3f900_22%)]',
 };
 
-// Diaporama du hero : ajouter une image = ajouter une ligne (src, clé de traduction du texte alternatif, cadrage, voile).
+// Diaporama du hero : géré dans le back office (Diaporama de l'accueil).
+// Liste de secours si la base n'a aucune diapositive (alt = clé de traduction).
 const HERO_SLIDES = [
     { src: '/images/hero-entrepot-2.jpg', alt: 'hero.image2_alt', position: '60% 55%', veil: 'light' },
     { src: '/images/hero-entrepot.jpg', alt: 'hero.image_alt', position: '70% 60%', veil: 'strong' },
@@ -23,9 +24,9 @@ const HERO_SLIDES = [
 ];
 const HERO_DELAY = 6000;
 
-function HeroSlideshow() {
+function HeroSlideshow({ slides: fromDb = [] }) {
     const t = useT();
-    const slides = HERO_SLIDES.map((s) => ({ ...s, alt: t(s.alt) }));
+    const slides = fromDb.length ? fromDb : HERO_SLIDES.map((s) => ({ ...s, alt: t(s.alt) }));
     const [index, setIndex] = useState(0);
     const [paused, setPaused] = useState(false);
     const count = slides.length;
@@ -86,26 +87,27 @@ function HeroSlideshow() {
     );
 }
 
-function Hero() {
+function Hero({ slides }) {
+    const { site } = usePage().props;
     const t = useT();
     const { locale } = useLocale();
     const stats = [
-        ['warehouse', 30000, ' m²', t('stats.warehouses')],
-        ['truck', 35, '', t('stats.trucks')],
-        ['calendar', 30, '+', t('stats.years')],
+        ['warehouse', Number(site.stat_warehouses), ' m²', t('stats.warehouses')],
+        ['truck', Number(site.stat_trucks), '', t('stats.trucks')],
+        ['calendar', Number(site.stat_years), '+', t('stats.years')],
     ];
 
     return (
         <section id="accueil" className="relative overflow-hidden bg-gradient-to-b from-[#eaf1f9] to-page pb-6 lg:pb-10">
-            <HeroSlideshow />
+            <HeroSlideshow slides={slides} />
 
             <div className="container-site relative">
                 <div className="pt-4 pb-8 lg:flex lg:min-h-[min(68vh,600px)] lg:flex-col lg:justify-center lg:py-16 lg:[text-shadow:0_0_18px_rgb(238_243_249),0_0_8px_rgb(238_243_249),0_0_2px_rgb(238_243_249)]">
                     <p className="eyebrow">{t('hero.eyebrow')}</p>
                     <h1 className="mt-4 max-w-[24ch] font-display text-[clamp(1.7rem,3.4vw,2.75rem)] leading-[1.12] font-extrabold uppercase tracking-tight text-navy">
-                        {t('hero.title')}
+                        {site.hero_title}
                     </h1>
-                    <p className="mt-4 max-w-[46ch] text-[17px] text-ink lg:text-lg">{t('hero.lead')}</p>
+                    <p className="mt-4 max-w-[46ch] text-[17px] text-ink lg:text-lg">{site.hero_lead}</p>
                     <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                         <a href="#poles" className="btn btn-primary">{t('hero.cta_poles')} <Icon name="arrow-right" /></a>
                         <a href="#partenariat" className="btn btn-outline">{t('hero.cta_partner')}</a>
@@ -226,7 +228,8 @@ function Brands({ brands, categories }) {
 
                 <ul data-reveal className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                     {visible.map((brand) => (
-                        <li key={brand.id} title={brand.name} className="group grid min-h-[104px] place-items-center rounded-2xl border border-line bg-white p-3 transition hover:-translate-y-0.5 hover:border-brand">
+                        <li key={brand.id} title={brand.name} className={`group relative grid min-h-[104px] place-items-center rounded-2xl border bg-white p-3 transition hover:-translate-y-0.5 hover:border-brand ${brand.featured ? 'border-accent/60 ring-1 ring-accent/30' : 'border-line'}`}>
+                            {brand.featured && <span className="absolute top-1.5 right-1.5 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">{t('brands.featured')}</span>}
                             <img src={brand.logo} alt={brand.name} loading="lazy" className="max-h-14 max-w-full object-contain transition duration-300 group-hover:scale-105 sm:max-h-[68px]" />
                         </li>
                     ))}
@@ -332,9 +335,10 @@ function Divisions({ divisions }) {
 
 function Logistics() {
     const t = useT();
+    const { site, locale } = usePage().props;
     const figures = [
-        ['30 000 m²', t('stats.warehouses')],
-        ['35', t('logistics.fig_trucks')],
+        [`${Number(site.stat_warehouses).toLocaleString(locale)} m²`, t('stats.warehouses')],
+        [String(site.stat_trucks), t('logistics.fig_trucks')],
         ['24 h', t('logistics.fig_delivery')],
     ];
     const features = [
@@ -380,12 +384,12 @@ function Logistics() {
     );
 }
 
-export default function Home({ poles, brands, brandCategories, divisions, sectors }) {
+export default function Home({ heroSlides, poles, brands, brandCategories, divisions, sectors }) {
     const t = useT();
 
     return (
         <Layout>
-            <Hero />
+            <Hero slides={heroSlides} />
             <Poles poles={poles} />
             <About />
             <Brands brands={brands} categories={brandCategories} />

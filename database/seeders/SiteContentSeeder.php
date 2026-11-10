@@ -3,15 +3,19 @@
 namespace Database\Seeders;
 
 use App\Models\Division;
+use App\Models\HeroSlide;
 use App\Models\PartnerBrand;
 use App\Models\Pole;
+use App\Support\SiteCache;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Contenus de la vitrine : pôles, marques partenaires, divisions et enseignes.
+ * Contenus de la vitrine : pôles, marques partenaires, divisions, enseignes et diaporama.
  * Les textes sont bilingues ({"fr": ..., "en": ...}).
  * Idempotent : les tables sont vidées puis rechargées à chaque exécution.
+ * ATTENTION en production : cela efface les modifications faites dans le back office.
+ * Au déploiement, utiliser php artisan cedicom:seed-content (ne charge que si la base est vide).
  */
 class SiteContentSeeder extends Seeder
 {
@@ -21,11 +25,44 @@ class SiteContentSeeder extends Seeder
             Pole::query()->delete();
             PartnerBrand::query()->delete();
             Division::query()->delete(); // supprime aussi les enseignes (cascade)
+            HeroSlide::query()->delete();
 
             $this->seedPartnerBrands();
             $this->seedPoles();
             $this->seedDivisions();
+            $this->seedHeroSlides();
         });
+
+        SiteCache::flush();
+    }
+
+    /** Diaporama seul (bases remplies avant son arrivée), utilisé par cedicom:seed-content. */
+    public function seedHeroSlidesOnly(): void
+    {
+        $this->seedHeroSlides();
+        SiteCache::flush();
+    }
+
+    private function seedHeroSlides(): void
+    {
+        $slides = [
+            ['images/hero-entrepot-2.jpg', '60% 55%', 'light', [
+                'fr' => "Rayonnages de riz et de conserves, chariots élévateurs et équipes CEDICOM chargeant un camion dans l'entrepôt",
+                'en' => 'Rice and canned goods racks, forklifts and CEDICOM teams loading a truck in the warehouse',
+            ]],
+            ['images/hero-entrepot.jpg', '70% 60%', 'strong', [
+                'fr' => 'Entrepôt CEDICOM avec palettes de produits et camions de livraison',
+                'en' => 'CEDICOM warehouse with pallets of goods and delivery trucks',
+            ]],
+            ['images/logistique/entrepot.jpg', '50% 45%', 'light', [
+                'fr' => "Préparateurs de commandes et palette de cartons entre les rayonnages de l'entrepôt",
+                'en' => 'Order pickers and a pallet of boxes between the warehouse racks',
+            ]],
+        ];
+
+        foreach ($slides as $i => [$image, $position, $veil, $alt]) {
+            HeroSlide::create(compact('image', 'position', 'veil', 'alt') + ['sort' => $i]);
+        }
     }
 
     private function seedPartnerBrands(): void
@@ -70,6 +107,8 @@ class SiteContentSeeder extends Seeder
                 'category' => $category,
                 'logo' => 'images/partenaires/'.$file,
                 'sort' => $i,
+                // Partenaires majeurs mis en avant sur le mur des marques
+                'featured' => in_array($name, ['FrieslandCampina', 'Danone Nutricia'], true),
             ]);
         }
     }
