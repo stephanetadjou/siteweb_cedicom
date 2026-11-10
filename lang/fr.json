@@ -132,6 +132,16 @@
     "form.subjects.delivery": "Question sur une livraison",
     "form.subjects.other": "Autre demande",
 
+    "form.too_many": "Vous avez envoyé plusieurs demandes en peu de temps. Merci de réessayer dans quelques minutes.",
+
+    "validation.single_line": "Le champ :attribute ne doit pas contenir de retour à la ligne.",
+
+    "validation.phone": "Veuillez saisir un numéro de téléphone valide.",
+
+    "validation.spam_content": "Les liens et le code HTML ne sont pas acceptés dans ce champ (2 liens au maximum dans le message).",
+
+    "form.recaptcha_notice": "Ce site est protégé par reCAPTCHA : les règles de confidentialité et les conditions d'utilisation de Google s'appliquent.",
+
     "validation.required": "Le champ :attribute est obligatoire.",
     "validation.email": "Veuillez saisir une adresse e-mail valide.",
     "validation.max": "Le champ :attribute ne doit pas dépasser :max caractères.",

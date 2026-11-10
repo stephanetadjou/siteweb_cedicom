@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Support\SpamGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,8 +20,12 @@ class AuthController extends Controller
         return Inertia::render('Admin/Login');
     }
 
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request, SpamGuard $guard): RedirectResponse
     {
+        if ($guard->recaptchaRejection($request, 'login')) {
+            throw ValidationException::withMessages(['email' => 'Vérification anti-robot échouée. Rechargez la page et réessayez.']);
+        }
+
         $request->authenticate();
 
         if (! $request->user()->is_admin) {

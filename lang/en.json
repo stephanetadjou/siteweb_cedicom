@@ -132,6 +132,16 @@
     "form.subjects.delivery": "Delivery question",
     "form.subjects.other": "Other request",
 
+    "form.too_many": "You have sent several requests in a short time. Please try again in a few minutes.",
+
+    "validation.single_line": "The :attribute field must not contain line breaks.",
+
+    "validation.phone": "Please enter a valid phone number.",
+
+    "validation.spam_content": "Links and HTML code are not allowed in this field (2 links at most in the message).",
+
+    "form.recaptcha_notice": "This site is protected by reCAPTCHA: the Google Privacy Policy and Terms of Service apply.",
+
     "validation.required": "The :attribute field is required.",
     "validation.email": "Please enter a valid email address.",
     "validation.max": "The :attribute field must not exceed :max characters.",

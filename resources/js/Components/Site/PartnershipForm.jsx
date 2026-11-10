@@ -1,4 +1,5 @@
 import { useForm } from '@inertiajs/react';
+import { useAntiSpam } from '@/lib/antispam';
 import { useT } from '@/lib/i18n';
 import Field from './Field';
 import FormStatus from './FormStatus';
@@ -6,6 +7,7 @@ import Icon from './Icon';
 
 export default function PartnershipForm({ sectors, full = false, idPrefix = 'partenariat' }) {
     const t = useT();
+    const antispam = useAntiSpam('partnership');
     const form = useForm({
         company: '',
         country: '',
@@ -17,8 +19,10 @@ export default function PartnershipForm({ sectors, full = false, idPrefix = 'par
         website: '', // champ piège anti-spam
     });
 
-    const submit = (e) => {
+    const submit = async (e) => {
         e.preventDefault();
+        const extra = await antispam();
+        form.transform((data) => ({ ...data, ...extra }));
         form.post('/devenir-partenaire', {
             preserveScroll: true,
             onSuccess: () => form.reset(),
@@ -36,7 +40,7 @@ export default function PartnershipForm({ sectors, full = false, idPrefix = 'par
                 </label>
             </div>
 
-            <FormStatus hasErrors={Object.keys(form.errors).length > 0} />
+            <FormStatus hasErrors={Object.keys(form.errors).length > 0} message={form.errors.form} />
 
             <div className="grid gap-4 sm:grid-cols-2">
                 <Field form={form} name="company" id={id('company')} label={t('form.company')} required placeholder={t('form.company_ph')} autoComplete="organization" />
@@ -63,6 +67,7 @@ export default function PartnershipForm({ sectors, full = false, idPrefix = 'par
                 {form.processing ? t('form.sending') : t('form.partner_submit')}
                 <Icon name="arrow-right" />
             </button>
+            {antispam.enabled && <p className="text-center text-xs text-muted">{t('form.recaptcha_notice')}</p>}
             <p className="text-center text-xs text-muted">{t('form.required_note')}</p>
         </form>
     );

@@ -5,10 +5,12 @@ import FormStatus from '@/Components/Site/FormStatus';
 import Icon from '@/Components/Site/Icon';
 import Layout from '@/Components/Site/Layout';
 import PageBanner from '@/Components/Site/PageBanner';
+import { useAntiSpam } from '@/lib/antispam';
 import { useT } from '@/lib/i18n';
 
 export default function Contact({ subjects }) {
     const t = useT();
+    const antispam = useAntiSpam('contact');
     const form = useForm({
         name: '',
         email: '',
@@ -18,8 +20,10 @@ export default function Contact({ subjects }) {
         website: '', // champ piège anti-spam
     });
 
-    const submit = (e) => {
+    const submit = async (e) => {
         e.preventDefault();
+        const extra = await antispam();
+        form.transform((data) => ({ ...data, ...extra }));
         form.post('/contact', {
             preserveScroll: true,
             onSuccess: () => form.reset(),
@@ -44,7 +48,7 @@ export default function Contact({ subjects }) {
                                 </label>
                             </div>
 
-                            <FormStatus hasErrors={Object.keys(form.errors).length > 0} />
+                            <FormStatus hasErrors={Object.keys(form.errors).length > 0} message={form.errors.form} />
 
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <Field form={form} name="name" label={t('form.name')} required autoComplete="name" />
@@ -60,6 +64,7 @@ export default function Contact({ subjects }) {
                                 {form.processing ? t('form.sending') : t('form.contact_submit')}
                                 <Icon name="arrow-right" />
                             </button>
+                            {antispam.enabled && <p className="text-xs text-muted">{t('form.recaptcha_notice')}</p>}
                         </form>
                     </div>
                 </div>

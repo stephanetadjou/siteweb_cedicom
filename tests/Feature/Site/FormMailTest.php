@@ -27,7 +27,7 @@ $partnerForm = [
 it('envoie un message de contact à info@cedicomgroup.com avec Reply-To sur le visiteur', function () use ($contactForm) {
     Mail::fake();
 
-    $this->post('/contact', $contactForm)->assertSessionHas('success');
+    $this->post('/contact', $contactForm + antispam())->assertSessionHas('success');
 
     Mail::assertSent(NewContactMessage::class, fn (NewContactMessage $mail) => $mail->hasTo('info@cedicomgroup.com')
         && $mail->hasReplyTo('awa@exemple.test')
@@ -37,7 +37,7 @@ it('envoie un message de contact à info@cedicomgroup.com avec Reply-To sur le v
 it('envoie une demande de partenariat à info@cedicomgroup.com avec Reply-To sur le visiteur', function () use ($partnerForm) {
     Mail::fake();
 
-    $this->post('/devenir-partenaire', $partnerForm)->assertSessionHas('success');
+    $this->post('/devenir-partenaire', $partnerForm + antispam())->assertSessionHas('success');
 
     Mail::assertSent(NewPartnershipRequest::class, fn (NewPartnershipRequest $mail) => $mail->hasTo('info@cedicomgroup.com')
         && $mail->hasReplyTo('jean@brasserie.test'));
@@ -47,7 +47,7 @@ it('envoie à plusieurs destinataires si MAIL_NOTIFY_TO en liste plusieurs', fun
     config(['mail.notify_to' => ['direction@cedicom.test', 'ventes@cedicom.test']]);
     Mail::fake();
 
-    $this->post('/contact', $contactForm);
+    $this->post('/contact', $contactForm + antispam());
 
     Mail::assertSent(NewContactMessage::class, fn (NewContactMessage $mail) => $mail->hasTo('direction@cedicom.test')
         && $mail->hasTo('ventes@cedicom.test'));
@@ -57,7 +57,7 @@ it('enregistre le formulaire même si l\'envoi de l\'e-mail échoue', function (
     Mail::shouldReceive('to')->andThrow(new RuntimeException('SMTP indisponible'));
     Log::shouldReceive('error')->once();
 
-    $this->post($url, $form)->assertSessionHas('success');
+    $this->post($url, $form + antispam())->assertSessionHas('success');
 
     expect($model::count())->toBe(1);
 })->with([

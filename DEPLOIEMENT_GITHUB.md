@@ -142,6 +142,12 @@ MAIL_PASSWORD=Exemple-MotDePasse-Boite
 MAIL_FROM_ADDRESS="info@cedicomgroup.com"
 MAIL_FROM_NAME="CEDICOM Group"
 MAIL_NOTIFY_TO=info@cedicomgroup.com
+
+# Anti-spam : voir la section 6 quater.
+RECAPTCHA_SITE_KEY=cle_du_site_fournie_par_google
+RECAPTCHA_SECRET_KEY=cle_secrete_fournie_par_google
+RECAPTCHA_MIN_SCORE=0.5
+ANTISPAM_ALERTS_PER_HOUR=30
 ```
 
 Puis `php artisan key:generate`, une seule fois. Ne jamais la régénérer ensuite, sinon les sessions sont invalidées.
@@ -187,6 +193,30 @@ La demande est enregistrée avant l'envoi : si le SMTP est en panne, le formulai
 3. Prendre en compte le `.env` : `php artisan config:clear` puis `php artisan config:cache`.
 4. Tester en envoyant un message depuis `/contact`. Si rien n'arrive, chercher « Échec de l'envoi » dans `storage/logs/laravel-*.log`.
 5. Dans cPanel > Délivrabilité des e-mails, vérifier que SPF et DKIM sont valides pour `cedicomgroup.com`, sinon les e-mails risquent d'arriver en spam.
+
+## 6 quater. Protection anti-spam des formulaires
+
+L'hébergeur a signalé que le formulaire de contact servait à envoyer du spam. Les formulaires de contact, de partenariat et de connexion au back office sont maintenant protégés par plusieurs barrières :
+
+| Protection | Effet |
+| --- | --- |
+| Google reCAPTCHA v3 (invisible) | Google donne un score de 0 (robot) à 1 (humain) ; en dessous de `RECAPTCHA_MIN_SCORE` (0.5), l'envoi est rejeté. Aucune case à cocher pour le visiteur. |
+| Champ piège et délai minimum | Un champ invisible rempli, ou un envoi moins de 3 secondes après l'affichage du formulaire (jeton horodaté signé), trahit un robot. |
+| Rejet silencieux | Un envoi rejeté reçoit le même message de succès qu'un vrai : rien n'est enregistré ni envoyé, le robot ne sait pas qu'il est bloqué. Chaque rejet est noté dans `storage/logs` (« Formulaire rejeté (anti-spam) »). |
+| Limitation de débit | 3 envois par 10 minutes, par adresse IP et par formulaire ; 5 tentatives de connexion par minute au back office. |
+| Validation stricte | Pas de retour à la ligne dans les noms et l'e-mail (anti-injection d'en-têtes), pas de HTML, aucun lien dans les noms et 2 liens au maximum dans le message, domaine de l'e-mail vérifié, longueurs limitées. |
+| E-mails | Les alertes partent uniquement vers `MAIL_NOTIFY_TO`. L'adresse du visiteur n'est jamais destinataire (seulement en « Répondre à ») et aucun accusé de réception automatique n'est envoyé. Au-delà de `ANTISPAM_ALERTS_PER_HOUR` alertes par heure, les e-mails s'arrêtent mais les demandes restent dans le back office. |
+
+**Créer les clés reCAPTCHA (une seule fois) :**
+1. Ouvrir https://www.google.com/recaptcha/admin avec un compte Google de l'entreprise, puis « + » (créer).
+2. Libellé : `CEDICOM site`. Type : **reCAPTCHA v3** (basé sur un score).
+3. Domaines : `cedicom-group.com` (couvre aussi `www.cedicom-group.com`). Ajouter `localhost` seulement pour tester en local.
+4. Valider : Google affiche la **clé du site** et la **clé secrète**.
+5. Dans le `.env` du serveur : `RECAPTCHA_SITE_KEY=` (clé du site) et `RECAPTCHA_SECRET_KEY=` (clé secrète). La clé secrète ne doit jamais être publiée ni envoyée par e-mail.
+6. `php artisan config:clear` puis `php artisan config:cache`.
+7. Vérifier : sur `/contact`, le petit badge reCAPTCHA apparaît en bas à droite ; envoyer un message test.
+
+Sans ces deux clés, reCAPTCHA est simplement désactivé (les autres protections restent actives). Si de vrais visiteurs sont bloqués, baisser `RECAPTCHA_MIN_SCORE` à `0.3` ; s'il reste du spam, le monter à `0.7`. Le tableau de bord reCAPTCHA de Google montre la répartition des scores.
 
 ## 7. Ce que font les workflows
 

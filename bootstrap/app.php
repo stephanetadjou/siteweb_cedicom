@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\ProtectPublicForm;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Back office : invités renvoyés vers la connexion admin, admins connectés vers le tableau de bord.
-        $middleware->alias(['admin' => EnsureUserIsAdmin::class]);
+        $middleware->alias(['admin' => EnsureUserIsAdmin::class, 'antispam' => ProtectPublicForm::class]);
         $middleware->redirectGuestsTo('/admin/login');
         $middleware->redirectUsersTo('/admin');
     })

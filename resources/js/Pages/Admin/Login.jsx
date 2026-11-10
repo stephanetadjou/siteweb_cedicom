@@ -1,12 +1,16 @@
 import { Head, useForm } from '@inertiajs/react';
+import { useAntiSpam } from '@/lib/antispam';
 
 const input = 'mt-1.5 block w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-[16px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25';
 
 export default function Login() {
-    const { data, setData, post, processing, errors, reset } = useForm({ email: '', password: '', remember: false });
+    const { data, setData, post, processing, errors, reset, transform } = useForm({ email: '', password: '', remember: false });
+    const antispam = useAntiSpam('login');
 
-    const submit = (e) => {
+    const submit = async (e) => {
         e.preventDefault();
+        const extra = await antispam();
+        transform((d) => ({ ...d, ...extra }));
         post('/admin/login', { onFinish: () => reset('password') });
     };
 

@@ -4,7 +4,7 @@ import { useT } from '@/lib/i18n';
 import Icon from './Icon';
 
 /** Message de succès (flash) ou résumé des erreurs, en tête de formulaire. */
-export default function FormStatus({ hasErrors }) {
+export default function FormStatus({ hasErrors, message }) {
     const t = useT();
     const success = usePage().props.flash?.success;
     const [visible, setVisible] = useState(true);
@@ -29,7 +29,7 @@ export default function FormStatus({ hasErrors }) {
         return (
             <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800" role="alert">
                 <Icon name="alert" className="mt-0.5 size-5" />
-                <p>{t('form.errors')}</p>
+                <p>{message ?? t('form.errors')}</p>
             </div>
         );
     }

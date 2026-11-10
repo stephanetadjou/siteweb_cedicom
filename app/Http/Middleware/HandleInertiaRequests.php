@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\SpamGuard;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -38,6 +39,11 @@ class HandleInertiaRequests extends Middleware
             'translations' => fn () => $this->translations($locale),
             // Uniquement pour le back office : nom et e-mail du compte connecté.
             'auth' => fn () => ['user' => $request->user()?->only('name', 'email')],
+            // Anti-spam des formulaires : jeton horodaté signé et clé publique reCAPTCHA (jamais la clé secrète).
+            'antispam' => fn () => [
+                'token' => app(SpamGuard::class)->token(),
+                'recaptchaKey' => app(SpamGuard::class)->recaptchaEnabled() ? config('antispam.recaptcha.site_key') : null,
+            ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
             ],

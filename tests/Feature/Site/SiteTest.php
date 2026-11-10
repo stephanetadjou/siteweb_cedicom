@@ -51,7 +51,7 @@ it('enregistre une demande de partenariat', function () {
             'country' => 'Cameroun',
             'email' => 'contact@brasserie.test',
             'sector' => 'agro',
-        ])
+        ] + antispam())
         ->assertRedirect('/devenir-partenaire')
         ->assertSessionHas('success');
 
@@ -63,7 +63,7 @@ it('enregistre une demande de partenariat', function () {
 
 it('valide la demande de partenariat avec des messages traduits', function (string $locale, string $expected) {
     $this->withSession(['locale' => $locale])
-        ->post('/devenir-partenaire', ['email' => 'pas-un-email', 'sector' => 'inconnu'])
+        ->post('/devenir-partenaire', ['email' => 'pas-un-email', 'sector' => 'inconnu'] + antispam())
         ->assertSessionHasErrors(['company' => $expected, 'email', 'sector']);
 
     expect(PartnershipRequest::count())->toBe(0);
@@ -79,20 +79,20 @@ it('enregistre un message de contact en anglais', function () {
             'email' => 'awa@example.com',
             'subject' => 'delivery',
             'message' => 'Hello',
-        ])
+        ] + antispam())
         ->assertSessionHas('success', __('form.contact_success', [], 'en'));
 
     expect(ContactMessage::sole()->locale)->toBe('en');
 });
 
-it('bloque les envois qui remplissent le champ piège', function () {
+it('bloque silencieusement les envois qui remplissent le champ piège', function () {
     $this->post('/contact', [
         'name' => 'Bot',
         'email' => 'bot@example.com',
         'subject' => 'other',
         'message' => 'spam',
         'website' => 'http://spam.test',
-    ])->assertSessionHasErrors('website');
+    ] + antispam())->assertSessionHas('success')->assertSessionHasNoErrors();
 
     expect(ContactMessage::count())->toBe(0);
 });

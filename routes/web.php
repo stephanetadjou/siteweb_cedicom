@@ -19,12 +19,12 @@ Route::get('/langue/{locale}', LocaleController::class)->name('locale');
 
 Route::get('/devenir-partenaire', [PartnershipController::class, 'create'])->name('partner.create');
 Route::post('/devenir-partenaire', [PartnershipController::class, 'store'])
-    ->middleware('throttle:6,1')
+    ->middleware(['throttle:site-forms', 'antispam:partnership'])
     ->name('partner.store');
 
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])
-    ->middleware('throttle:6,1')
+    ->middleware(['throttle:site-forms', 'antispam:contact'])
     ->name('contact.store');
 
 require __DIR__.'/admin.php';

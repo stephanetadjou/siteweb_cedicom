@@ -7,17 +7,19 @@ use Illuminate\Validation\Rule;
 
 class StorePartnershipRequest extends SiteFormRequest
 {
+    protected array $singleLine = ['company', 'country', 'contact_name', 'email', 'phone'];
+
     public function rules(): array
     {
         return [
-            'company' => ['required', 'string', 'max:150'],
-            'country' => ['required', 'string', 'max:100'],
-            'contact_name' => ['nullable', 'string', 'max:150'],
-            'email' => ['required', 'email', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:40'],
+            'company' => $this->line(true, 150),
+            'country' => $this->line(true, 100),
+            'contact_name' => $this->line(false, 150),
+            'email' => $this->emailRules(),
+            'phone' => $this->phoneRules(),
             'sector' => ['required', Rule::in(PartnershipRequest::SECTORS)],
-            'message' => ['nullable', 'string', 'max:3000'],
-        ] + $this->honeypotRules();
+            'message' => $this->textRules(false, 3000),
+        ];
     }
 
     public function attributes(): array

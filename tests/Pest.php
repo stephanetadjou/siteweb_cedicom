@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\SpamGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,4 +48,10 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/** Champs anti-spam d'un envoi « humain » : jeton horodaté signé d'un formulaire affiché il y a $secondsAgo s. */
+function antispam(int $secondsAgo = 10): array
+{
+    return ['_t' => app(SpamGuard::class)->token(time() - $secondsAgo)];
 }

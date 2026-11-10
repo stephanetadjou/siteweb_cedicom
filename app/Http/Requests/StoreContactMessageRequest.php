@@ -7,15 +7,17 @@ use Illuminate\Validation\Rule;
 
 class StoreContactMessageRequest extends SiteFormRequest
 {
+    protected array $singleLine = ['name', 'email', 'phone'];
+
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:150'],
-            'email' => ['required', 'email', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:40'],
+            'name' => $this->line(true, 150),
+            'email' => $this->emailRules(),
+            'phone' => $this->phoneRules(),
             'subject' => ['required', Rule::in(ContactMessage::SUBJECTS)],
-            'message' => ['required', 'string', 'max:5000'],
-        ] + $this->honeypotRules();
+            'message' => $this->textRules(true, 5000),
+        ];
     }
 
     public function attributes(): array
